@@ -1,0 +1,109 @@
+
+#
+# CalcSensPrecFunction1Testing.txt
+# 
+#  Notes and code for testing the CalcSensPrec function
+
+
+# July 27, 2022
+
+
+#cd OncoSplice/CalcSensPrec
+#ls -l
+
+
+# ————————————————————————————————————————————————————————————————————————
+
+# This runs CalcSensPrec with dummy target & query vectors
+
+python3
+
+# ----------   IMPORT DEPENDENCIES ----------------------
+
+import sys,string,os
+sys.path.append('/Users/schh5o/Library/Python/3.7/lib/python/site-packages')
+
+import numpy as np
+import pandas as pd
+
+# -----  CREATE DUMMY TARGET AND QUERY VECTORS AS PANDAS SERIES ------
+
+target_vec = [ 'A','B','C','D','E','F',
+'S','T','U','V','W','X','Y','Z' ]
+
+query_vec = [ 'A','B',
+             'G','H','I','J','K','L','M','N','O','P',
+              'W','X','Y','Z' ] 
+
+t_vec = pd.Series(data=target_vec)
+q_vec = pd.Series(data=query_vec)
+
+#tq=pd.Series( np.intersect1d(t_vec, q_vec) )
+#nOverlap = tq.size
+
+
+
+from CalcSensPrecFunction1 import CalcSensPrec
+#  CalcSensPrec
+
+perf = CalcSensPrec( target = t_vec, qry = q_vec )
+
+type(perf)
+perf
+
+##################################################################
+#
+# ******  SEE .py file for most recent version  *****
+#
+#  CalcSensPrecFunction1.txt
+# 
+#  CalcSensPrec function 
+#    
+# July 27, 2022
+# 
+# **** SPCA function *******
+#
+def CalcSensPrec( target = None, qry = None ):
+#
+#   target is a pandas Series containing the target (reference) event names  
+#   qry is a pandas Series containing the event names to assess vs. target
+#
+#   Returns a pandas series with the following elements:
+#   nt = number of elements in target
+#   nq = number of elements in query
+#   nOverlap = number of elements in intersection
+#   sens = nOverlap / nt  -- proportion, not percent
+#   prec = nOverlap / nq  -- proportion, not percent
+#
+#
+    import numpy as np
+    import pandas as pd
+#
+#   Set up pandas series for summary stats.
+    res={ 'nt' : np.nan, 'nq' : np.nan, 'nOverlap' : np.nan , 'sens' : np.nan, 'prec' : np.nan }
+#
+    res = pd.Series(res)
+#
+    nt = target.size
+    nq = qry.size
+    tq=pd.Series( np.intersect1d(target, qry) )
+    nOverlap = tq.size
+    sens = float( nOverlap / nt )
+    prec = float( nOverlap / nq )
+#
+    res['nt'] = nt
+    res['nq'] = nq
+    res['nOverlap'] = nOverlap
+    res['sens'] = sens
+    res['prec'] = prec
+#
+    return res
+
+
+#################################################################
+
+exit()
+
+
+
+
