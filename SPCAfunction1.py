@@ -7,14 +7,13 @@
 #  Performs Sparse PCA of numeric matrix using 
 #  the SparsePCA function in sklearn-decomposition
 #
-#  import:  from SPCAfunction1 import SPCA
 # 
 # **** SPCA function *******
 #
 def SPCA( PSIdf=None, SPCAparms=None ):
 #
 #   PSIdf is a pandas data frame with events (features) as columns, no missing values.  
-#   So, PSI matrix may need to be transposed when calling this ftn.
+#   So, PSI matrix may need to be transposed before calling this ftn.
 #
 #   Event names are assumed to be the row names, not in a column.
 #
@@ -24,13 +23,15 @@ def SPCA( PSIdf=None, SPCAparms=None ):
 #   it_tol (1e-04), objective function convergence criterion value.
 #   max_iter (400), maximum number of iterations.
 #
+#   Possible enhancement: check types & values of incoming arguments
+#
 #
     import numpy as np
     import pandas as pd
 #
     from sklearn.decomposition import SparsePCA
 #
-# -- Make array with the event names/codes
+# -- Make numpy array with the event names/codes
 #
     EVnames = np.array(PSIdf.columns.values)
 #
@@ -47,13 +48,16 @@ def SPCA( PSIdf=None, SPCAparms=None ):
 #
     transformer1.fit(PSInp)
 #
-# -- Further process the matrix of loadings
+#   Possible enhancement: wrap .fit call in try() or the like to handle error(s)
+#
+# -- Process the matrix of loadings
 #
     res1=transformer1.components_
 #   res1.shape
 #
 #   Identify events that have non-0 loading in >0 PCs
 #   Binarize, then sum down columns
+#
     res1[res1 != 0]=1
     event_sums = np.sum(res1,axis=0)
 #

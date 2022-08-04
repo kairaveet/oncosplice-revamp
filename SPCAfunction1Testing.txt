@@ -77,14 +77,17 @@ PSIdf = data.transpose()
 
 parm_vec = { 'PCs' : 15, 's_alpha' : 0.8, 'it_tol' : 1e-04 , 'max_it' : 400 }
 parm_vec = pd.Series(data=parm_vec)
-type(parm_vec)
-print(parm_vec)
+#type(parm_vec)
+#print(parm_vec)
 
-from SPCAfunction1 import SPCA
+#from SPCAfunction1 import SPCA
 
 df = PSIdf
 
+# ---  CALL THE SPCA FUNCTION -----
 eventsFromSPCA = SPCA( PSIdf=df, SPCAparms=parm_vec )
+
+# check results
 type(eventsFromSPCA)
 eventsFromSPCA
 
