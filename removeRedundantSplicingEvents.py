@@ -1,7 +1,7 @@
 
 import pandas as pd
 import numpy as np
-from itertools import chain
+#from itertools import chain
 
 
 def format_psi_matrix(psi_file_path):
@@ -14,29 +14,26 @@ def format_psi_matrix(psi_file_path):
 
 
 def remove_redundant_splicing_events(formatted_psi_file, corr_threshold, metadata):
-    # print("corr.threshold for corr level being tested: " + str(corr_threshold))
+    print("corr.threshold for corr level being tested: " + str(corr_threshold))
 
     # create an empty list which will be appended with every gene run
     filtered_rows = []
 
     # get the list of genes
-    rows_withonlygene = metadata.iloc[:, 0]
-    rows_withonlygene = rows_withonlygene + ":"
+    rows_withonlygene = metadata.iloc[:, 0] + ":"
     rows_withonlygene_np = rows_withonlygene.to_numpy()
     gene_list = pd.unique(rows_withonlygene)
-
-    mat = formatted_psi_file
 
     for i in gene_list:
         print(i)
         logical_vec = np.isin(rows_withonlygene_np, i)  # determine which are the rows in the PSI matrix associated with that gene
-        gene_i_matrix = mat.iloc[logical_vec, ]  # get the events associated with the gene from PSI matrix
-        gene_i_matrix = gene_i_matrix.transpose()  # transpose the filtered PSI matrix for the cor function
+        gene_i_matrix = formatted_psi_file.iloc[logical_vec, ].transpose()  # get the events associated with the gene from PSI matrix and transpose the filtered PSI matrix for the cor function
+        # gene_i_matrix = gene_i_matrix.transpose()  # 
         cor_i_matrix = gene_i_matrix.corr(method="pearson")  # compute correlation which takes care of NA values
         cor_i_matrix_np = cor_i_matrix.to_numpy()  # to work with downstream steps, we need np array of cor matrix
         cor_i_matrix_np[np.triu_indices(cor_i_matrix_np.shape[0], 0)] = np.nan  # set upper triangular cor matrix to be NA because its symmetrical matrix
-        idx_cor_i_binary = np.absolute(cor_i_matrix_np) > corr_threshold  # find indices/logical np array for values above threshold for cor values
-        idx_cor_i_binary = 1 * idx_cor_i_binary  # binarize T/F matrix for easy column/row sum calculations
+        idx_cor_i_binary = 1 * (np.absolute(cor_i_matrix_np) > corr_threshold)  # find indices/logical np array for values above threshold for cor values and binarize T/F matrix for easy column/row sum calculations
+        #idx_cor_i_binary = 1 * idx_cor_i_binary  # 
         sum_idx_cor_i_binary = np.nansum(idx_cor_i_binary, axis=0)  # determine the column sum of the binarized matrix
         # greater_than_zero_sums = sum_idx_cor_i_binary[sum_idx_cor_i_binary > 0]
 
