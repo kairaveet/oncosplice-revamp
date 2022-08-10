@@ -1,0 +1,121 @@
+
+#
+# SPCAfunction2Testing.txt
+# 
+#  Notes and code for 
+#    running spca on KV1c dataset  
+
+
+#  August 10, 2022
+
+
+#cd /Users/schh5o/Documents/Term/OncoSplice/sparsePCA
+#ls -l
+
+
+# ————————————————————————————————————————————————————————————————————————
+
+
+
+# INSTALLATION
+# Documentation lists following dependencies
+#   numba
+#   numpy
+#   scipy
+#   scikit-learn
+#   matplotlib
+#   pandas
+
+#  pip install numba
+#    might have already been installed, no issues noted
+#  pip install scikit-dimension
+#    no issues noted
+
+# *  view installed package commands
+
+
+ 
+# https://scikit-#. dimension.readthedocs.io/en/latest/quick_start.html
+
+#  ------ SparsePCA online example ------------------
+
+# https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.SparsePCA.html#sklearn.decomposition.SparsePCA
+
+# ————————————————————————————————————————————————————————————————————————
+
+python3
+
+# ----------   IMPORT DEPENDENCIES ----------------------
+
+import sys,string,os
+#sys.path.append('/Users/schh5o/Library/Python/3.7/lib/python/site-packages')
+
+
+#from sklearn import decomposition
+
+import numpy as np
+import pandas as pd
+#
+#from sklearn.decomposition import SparsePCA
+
+
+# --------------  BRING IN KV1c DATASET W/ EVENT CODES ----------
+
+# -- Bring in as pandas df
+
+fn='kv1cMeanImputedPSIevcodes.txt'
+data = pd.read_csv(fn,sep='\t',index_col=0)
+#. index_col=0 sets uid as the index for the rows
+
+# data.shape
+# data.columns
+# data.index
+
+PSIdf = data.transpose()
+#. conversion to np.array is done within SPCA function
+
+
+#parm_vec = { 'PCs' : 15, 's_alpha' : 0.8, 'it_tol' : 1e-04 , 'max_it' : 400 }
+#parm_vec = pd.Series(data=parm_vec)
+#type(parm_vec)
+#print(parm_vec)
+
+from SPCAfunction2 import SPCA
+
+df = PSIdf
+
+
+# ---  CALL THE SPCA FUNCTION -----
+
+#eventsFromSPCA = SPCA( PSIdf=df, SPCAparms=parm_vec )
+
+eventsFromSPCA = SPCA(df)
+#. good
+eventsFromSPCA = SPCA(df,s_alpha=0.79)
+#.  good
+eventsFromSPCA = SPCA(df,r_alpha=0.79)
+#. returns error, as it should
+eventsFromSPCA = SPCA(PSIdf=df,s_alpha=0.80)
+#. good
+eventsFromSPCA = SPCA(PSId=df,s_alpha=0.80)
+#. returns error, as it should
+
+# check results
+type(eventsFromSPCA)
+eventsFromSPCA
+# should be 2082
+
+
+##################################################################
+#
+# ******  SEE .py file for most recent version  *****
+#
+
+
+#################################################################
+
+exit()
+
+
+
+
