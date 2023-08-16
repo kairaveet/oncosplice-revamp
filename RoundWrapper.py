@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 from determineNMFRank import *
 from runNMF import *
 import time
@@ -7,7 +8,8 @@ from linearSVM import *
 from correlationDepletion import *
 
 
-def round_wrapper(full_psi_file, full_imputed_psi_file, highly_variable_events, rank=None, min_group_size=5, dPSI=0.1, dPSI_p_val=0.05, min_differential_events=100, top_n_differential_events=150, conservation="stringent", strictness="easy", depletion_corr_threshold=0.3, write_files=True):
+
+def round_wrapper(filename, full_psi_file, full_imputed_psi_file, highly_variable_events, rank=None, min_group_size=5, dPSI=0.1, dPSI_p_val=0.05, min_differential_events=100, top_n_differential_events=150, conservation="stringent", strictness="easy", depletion_corr_threshold=0.3, write_files=True):
 
     # a wrapper function that does for ONE iteration 1) nmf analysis 2) finds unique differential splicing events per NMF component and 3) linear SVC and 4) depletes the events for next round
     # full_psi_file: splicing events by samples dataframe of all splicing events (events after 1) 75% presence of samples  and 2) removing redundant events using inter-correlation analysis)
@@ -43,12 +45,24 @@ def round_wrapper(full_psi_file, full_imputed_psi_file, highly_variable_events, 
     groups_file = pd.DataFrame(refined_binarized_output.transpose())  # dimensions should be number of patients/samples (rows) by number of clusters (cols)
     groups_file.index = formatted_psi_file_hve.columns
     groups_file.columns = groups_file.columns.map(str)
+    groups_file_cols = groups_file.columns
 
+    remove_cols_from_nmf_clusters = []
     # check whether the data being provided is in good format and matches the sanity requirements for determining differential splicing events
-    for col in groups_file.columns:
-        mwu_check = mwuChecks(full_psi_file, groups_file, grpvar=col, min_group_size=min_group_size)
+    for col in range(len(groups_file_cols)):
+        #print(col)
+        mwu_check = mwuChecks(full_psi_file, groups_file, grpvar=groups_file_cols[col], min_group_size=min_group_size)
+        print(mwu_check)
         if mwu_check == 0:
-            print(("number of samples less than min_group_size in NMF Cluster " + col))
+            print(col)
+            print(groups_file_cols[col])
+            print(("differential expression not compatible for cluster " + groups_file_cols[col]))
+            groups_file = groups_file.drop(groups_file_cols[col], axis='columns')
+            print(groups_file.columns)
+            # refined_binarized_output = np.delete(refined_binarized_output, col, axis=0)
+            remove_cols_from_nmf_clusters.append(col)
+
+    refined_binarized_output = np.delete(refined_binarized_output, remove_cols_from_nmf_clusters, axis=0)
 
     print(("Finding top " + str(top_n_differential_events) + " differential splicing events per NMF cluster..."))
     diff_events, remove_clusters = find_top_differential_events(exp_file=full_psi_file, groups_file=groups_file, min_group_size=min_group_size, dPSI=dPSI, dPSI_p_val=dPSI_p_val, min_differential_events=min_differential_events, top_n=top_n_differential_events)
@@ -62,6 +76,8 @@ def round_wrapper(full_psi_file, full_imputed_psi_file, highly_variable_events, 
     # Linear SVM/SVC training dataset generation by creating centroids for the NMF clusters
 
     centroids = generate_train_data(psi_file_with_diff_events=psi_file_with_diff_events, nmf_binarized_output=refined_binarized_output_f.transpose())  # splicing events by clusters matrix
+    centroids = centroids.dropna(axis=0)
+    psi_file_with_diff_events_imp = psi_file_with_diff_events_imp.loc[centroids.index, :]
 
     print(("Running Linear SVM on final " + str(np.shape(refined_binarized_output_f)[0]) + " clusters with..."))
     final_clusters = classify(train=centroids, imputed_psi_file_with_diff_events=psi_file_with_diff_events_imp, groups=np.arange(np.shape(refined_binarized_output_f)[0]), conservation=conservation)  # need to figure out a way to give more meaningful cluster name instead of an integer after this step (such as C1, etc etc).
@@ -69,13 +85,17 @@ def round_wrapper(full_psi_file, full_imputed_psi_file, highly_variable_events, 
     print(("Depleting events using a correlation threshold of " + str(depletion_corr_threshold) + "..."))
     start_time = time.time()
     depleted_psi_file_after_round = deplete_events(nmf_basis_matrix=basis_matrix, full_psi_file=full_psi_file, corr_threshold=depletion_corr_threshold, strictness=strictness)
-    print("--- %s seconds ---" % (time.time() - start_time))  # took 29.865 seconds
+    print("--- %s seconds ---" % (time.time() - start_time))
 
     depleted_psi_file_after_round_imp = full_imputed_psi_file.filter(depleted_psi_file_after_round.index, axis="rows")
     depleted_psi_file_after_round = full_psi_file.filter(depleted_psi_file_after_round.index, axis="rows")
 
     if write_files is True:
-        diff_events.to_csv("/Users/tha8tf/Documents/testsOncosplice/round_wrapper/Top150_SVMInput_events_Round1_force_broad_sorted_by_adjpval.txt", sep="\t")
-        final_clusters.to_csv("/Users/tha8tf/Documents/testsOncosplice/round_wrapper/KT_Round1_clusters_conservative.txt", sep="\t")
+        os.mkdir(filename)
+        cd = os.getcwd()
+        diff_events_path = os.path.join(cd, filename, "differential_splicing_events.txt")
+        final_clusters_path = os.path.join(cd, filename, "round_clusters.txt")
+        diff_events.to_csv(diff_events_path, sep="\t")
+        final_clusters.to_csv(final_clusters_path, sep="\t")
 
     return final_clusters, depleted_psi_file_after_round_imp, depleted_psi_file_after_round
